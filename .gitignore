@@ -33,3 +33,5 @@ build/
 .vscode/
 
 data/
+node_modules
+frontend/dist
