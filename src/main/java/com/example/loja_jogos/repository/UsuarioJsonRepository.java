@@ -30,6 +30,12 @@ public class UsuarioJsonRepository {
                 .findFirst();
     }
 
+    public synchronized Optional<Usuario> buscarPorId(Long id) {
+        return listar().stream()
+                .filter(u -> u.getId().equals(id))
+                .findFirst();
+    }
+
     public synchronized Usuario salvar(Usuario novo) {
         List<Usuario> lista = listar();
         long proximoId = lista.stream().mapToLong(Usuario::getId).max().orElse(0) + 1;

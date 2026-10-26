@@ -6,8 +6,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+
 @RestController
-@CrossOrigin(origins = "http://localhost:5173")
+@RequestMapping("/api")
 public class AuthController {
 
     private final UsuarioJsonRepository usuarios;
@@ -29,6 +30,9 @@ public class AuthController {
 
     @PostMapping("/login")
     public Usuario login(@RequestBody Usuario dados) {
+        if (vazio(dados.getEmail()) || vazio(dados.getSenha())) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Preencha email e senha");
+        }
         Usuario u = usuarios.buscarPorEmail(dados.getEmail()).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Email ou senha inválidos"));
         if (!u.getSenha().equals(dados.getSenha())) {

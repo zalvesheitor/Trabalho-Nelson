@@ -32,7 +32,7 @@ build/
 ### VS Code ###
 .vscode/
 
-data/
+/data/
 
 frontend/node_modules/
 frontend/dist/
