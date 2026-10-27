@@ -16,10 +16,12 @@ function write(key, value) {
   localStorage.setItem(key, JSON.stringify(value));
 }
 
+const SEM_FAVORITOS = [];
+
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  // users: { [username]: { password, library: [{gameId, acquiredAt, pricePaid}], reviews: { [gameId]: {nota, texto, data} } } }
+  // users: { [username]: { password, library: [{gameId, acquiredAt, pricePaid}], reviews: { [gameId]: {nota, texto, data} }, favorites: [gameId] } }
   const [users, setUsers] = useState(() => read(KEY_USERS, {}));
   const [session, setSession] = useState(() => read(KEY_SESSION, null));
 
@@ -33,7 +35,7 @@ export function AuthProvider({ children }) {
       const name = username.trim();
       if (!name || !password) return { ok: false, error: 'Preencha usuário e senha.' };
       if (users[name]) return { ok: false, error: 'Esse usuário já existe.' };
-      persistUsers({ ...users, [name]: { password, library: [], reviews: {} } });
+      persistUsers({ ...users, [name]: { password, library: [], reviews: {}, favorites: [] } });
       setSession(name);
       write(KEY_SESSION, name);
       return { ok: true };
@@ -61,6 +63,9 @@ export function AuthProvider({ children }) {
   const current = session ? users[session] : null;
   const user = current ? session : null;
   const library = current ? current.library : [];
+
+  // Contas criadas antes desta função não têm o campo "favorites".
+  const favorites = current && current.favorites ? current.favorites : SEM_FAVORITOS;
 
   const hasGame = useCallback((gameId) => library.some((e) => e.gameId === gameId), [library]);
 
@@ -97,6 +102,17 @@ export function AuthProvider({ children }) {
     [user, users, hasGame, persistUsers]
   );
 
+  // Favoritos aparecem em um grupo próprio no topo da biblioteca.
+  const toggleFavorite = useCallback(
+    (gameId) => {
+      if (!user) return;
+      const atual = users[user].favorites || [];
+      const next = atual.includes(gameId) ? atual.filter((id) => id !== gameId) : [...atual, gameId];
+      persistUsers({ ...users, [user]: { ...users[user], favorites: next } });
+    },
+    [user, users, persistUsers]
+  );
+
   const myReview = useCallback((gameId) => (current ? current.reviews[gameId] || null : null), [current]);
 
   // Todas as avaliações de um jogo (de todos os usuários), mais recentes primeiro.
@@ -110,8 +126,21 @@ export function AuthProvider({ children }) {
   );
 
   const value = useMemo(
-    () => ({ user, library, hasGame, register, login, logout, acquireGame, saveReview, myReview, reviewsOf }),
-    [user, library, hasGame, register, login, logout, acquireGame, saveReview, myReview, reviewsOf]
+    () => ({
+      user,
+      library,
+      favorites,
+      hasGame,
+      register,
+      login,
+      logout,
+      acquireGame,
+      saveReview,
+      toggleFavorite,
+      myReview,
+      reviewsOf,
+    }),
+    [user, library, favorites, hasGame, register, login, logout, acquireGame, saveReview, toggleFavorite, myReview, reviewsOf]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
