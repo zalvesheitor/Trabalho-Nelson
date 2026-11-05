@@ -1,6 +1,7 @@
 package com.example.loja_jogos.controller;
 
 import com.example.loja_jogos.model.Aquisicao;
+import com.example.loja_jogos.model.Jogo;
 import com.example.loja_jogos.model.Usuario;
 import com.example.loja_jogos.repository.BibliotecaJsonRepository;
 import com.example.loja_jogos.repository.UsuarioJsonRepository;
@@ -19,7 +20,8 @@ import java.util.Optional;
 public class BibliotecaController {
 
     public record AvaliacaoEntrada(Integer nota, String texto) {}
-    public record ItemBiblioteca(int jogoId, String data, Integer nota, String texto) {}
+    public record ItemBiblioteca(int jogoId, String data, Integer nota, String texto, String dataAvaliacao,
+                                  Double valorPago) {}
     public record AvaliacaoSaida(String usuario, int nota, String texto, String data) {}
 
     private final BibliotecaJsonRepository repo;
@@ -38,9 +40,10 @@ public class BibliotecaController {
     @ResponseStatus(HttpStatus.CREATED)
     public synchronized void adquirir(@RequestHeader("X-Usuario-Id") Long usuarioId, @PathVariable int jogoId) {
         exigirUsuario(usuarioId);
-        if (jogoService.listarTodos().stream().noneMatch(j -> j.getId() == jogoId)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Jogo não encontrado");
-        }
+        Jogo jogo = jogoService.listarTodos().stream()
+                .filter(j -> j.getId() == jogoId)
+                .findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Jogo não encontrado"));
         List<Aquisicao> todas = repo.listar();
         if (buscar(todas, usuarioId, jogoId).isPresent()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Você já possui este jogo");
@@ -49,6 +52,7 @@ public class BibliotecaController {
         a.setUsuarioId(usuarioId);
         a.setJogoId(jogoId);
         a.setData(Instant.now().toString());
+        a.setValorPago(precoFinal(jogo)); // o servidor calcula o valor: o cliente não manda preço
         todas.add(a);
         repo.salvarTodos(todas);
     }
@@ -59,7 +63,8 @@ public class BibliotecaController {
         exigirUsuario(usuarioId);
         return repo.listar().stream()
                 .filter(a -> a.getUsuarioId().equals(usuarioId))
-                .map(a -> new ItemBiblioteca(a.getJogoId(), a.getData(), a.getNota(), a.getTexto()))
+                .map(a -> new ItemBiblioteca(a.getJogoId(), a.getData(), a.getNota(), a.getTexto(), a.getDataAvaliacao(),
+                        a.getValorPago()))
                 .toList();
     }
 
@@ -92,6 +97,13 @@ public class BibliotecaController {
                         a.getDataAvaliacao()))
                 .sorted(Comparator.comparing(AvaliacaoSaida::data).reversed())
                 .toList();
+    }
+
+    // Preço com desconto, em reais com 2 casas (mesma regra do front: precoFinal em ui.jsx).
+    private double precoFinal(Jogo jogo) {
+        double preco = jogo.getPreco() == null ? 0 : jogo.getPreco();
+        int desconto = jogo.getDesconto() == null ? 0 : jogo.getDesconto();
+        return Math.round(preco * (100 - desconto)) / 100.0;
     }
 
     private Optional<Aquisicao> buscar(List<Aquisicao> lista, Long usuarioId, int jogoId) {

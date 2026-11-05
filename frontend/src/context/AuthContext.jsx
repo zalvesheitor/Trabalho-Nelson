@@ -3,6 +3,20 @@ import { api } from '../api.js';
 
 // Só a sessão fica no navegador. Usuários, biblioteca e avaliações ficam no backend.
 const KEY_SESSION = 'steam_clone_session';
+// Favoritos ainda não existem no backend: ficam no navegador, separados por usuário.
+const KEY_FAVS = 'steam_clone_favs_';
+const KEY_WISH = 'steam_clone_wish_';
+
+function lerLista(chave, userId) {
+    if (userId == null) return [];
+    try {
+        const raw = localStorage.getItem(chave + userId);
+        const l = raw ? JSON.parse(raw) : [];
+        return Array.isArray(l) ? l : [];
+    } catch {
+        return [];
+    }
+}
 
 function lerSessao() {
     try {
@@ -27,6 +41,20 @@ export function AuthProvider({ children }) {
     // library: [{ jogoId, data, nota, texto }] vinda de GET /api/biblioteca
     const [library, setLibrary] = useState([]);
     const [bibliotecaPronta, setBibliotecaPronta] = useState(() => lerSessao() === null);
+    const [favorites, setFavorites] = useState(() => {
+        const s = lerSessao();
+        return lerLista(KEY_FAVS, s && s.id);
+    });
+    const [wishlist, setWishlist] = useState(() => {
+        const s = lerSessao();
+        return lerLista(KEY_WISH, s && s.id);
+    });
+
+    // Troca de usuário (login, logout ou recarga da página): carrega os favoritos dele.
+    useEffect(() => {
+        setFavorites(lerLista(KEY_FAVS, session && session.id));
+        setWishlist(lerLista(KEY_WISH, session && session.id));
+    }, [session]);
 
     const iniciarSessao = useCallback((u) => {
         const s = { id: u.id, nome: u.nome, email: u.email };
@@ -124,10 +152,43 @@ export function AuthProvider({ children }) {
         [session, hasGame, recarregarBiblioteca]
     );
 
+    const toggleFavorite = useCallback(
+        (gameId) => {
+            if (!session) return;
+            setFavorites((atual) => {
+                const next = atual.includes(gameId) ? atual.filter((id) => id !== gameId) : [...atual, gameId];
+                try {
+                    localStorage.setItem(KEY_FAVS + session.id, JSON.stringify(next));
+                } catch {
+                    /* sem armazenamento: o favorito vale só até recarregar */
+                }
+                return next;
+            });
+        },
+        [session]
+    );
+
+    // Lista de desejos: jogos que o usuário quer comprar depois (também só no navegador, por enquanto).
+    const toggleWishlist = useCallback(
+        (gameId) => {
+            if (!session) return;
+            setWishlist((atual) => {
+                const next = atual.includes(gameId) ? atual.filter((id) => id !== gameId) : [...atual, gameId];
+                try {
+                    localStorage.setItem(KEY_WISH + session.id, JSON.stringify(next));
+                } catch {
+                    /* sem armazenamento: vale só até recarregar */
+                }
+                return next;
+            });
+        },
+        [session]
+    );
+
     const myReview = useCallback(
         (gameId) => {
             const e = library.find((x) => x.jogoId === gameId);
-            return e && e.nota != null ? { nota: e.nota, texto: e.texto || '' } : null;
+            return e && e.nota != null ? { nota: e.nota, texto: e.texto || '', data: e.dataAvaliacao || e.data } : null;
         },
         [library]
     );
@@ -136,6 +197,8 @@ export function AuthProvider({ children }) {
         () => ({
             user: session,
             library,
+            favorites,
+            wishlist,
             bibliotecaPronta,
             hasGame,
             register,
@@ -143,9 +206,11 @@ export function AuthProvider({ children }) {
             logout,
             acquireGame,
             saveReview,
+            toggleFavorite,
+            toggleWishlist,
             myReview,
         }),
-        [session, library, bibliotecaPronta, hasGame, register, login, logout, acquireGame, saveReview, myReview]
+        [session, library, favorites, wishlist, bibliotecaPronta, hasGame, register, login, logout, acquireGame, saveReview, toggleFavorite, toggleWishlist, myReview]
     );
 
     return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

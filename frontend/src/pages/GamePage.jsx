@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import GameImage from '../components/GameImage.jsx';
-import { formatDate, formatPrice, Stars } from '../components/ui.jsx';
+import Icon from '../components/Icon.jsx';
+import { formatDate, formatPrice, precoFinal, PriceTag, Stars } from '../components/ui.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useGames } from '../context/GamesContext.jsx';
 
@@ -64,7 +65,7 @@ export default function GamePage() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const { games, loading } = useGames();
-  const { user, hasGame, acquireGame, bibliotecaPronta } = useAuth();
+  const { user, hasGame, acquireGame, bibliotecaPronta, wishlist, toggleWishlist } = useAuth();
   const [confirmando, setConfirmando] = useState(false);
   const [adquirindo, setAdquirindo] = useState(false);
   const [erro, setErro] = useState('');
@@ -97,6 +98,13 @@ export default function GamePage() {
 
   const owned = hasGame(game.id);
   const media = reviews.length ? reviews.reduce((s, r) => s + r.nota, 0) / reviews.length : 0;
+
+  const desejado = wishlist.includes(game.id);
+
+  function alternarDesejo() {
+    if (!user) navigate('/login');
+    else toggleWishlist(game.id);
+  }
 
   async function adquirir() {
     if (!user) {
@@ -166,9 +174,19 @@ export default function GamePage() {
               </>
           ) : (
               <>
-                <h2>{game.preco ? `Comprar ${game.titulo}` : `Jogar ${game.titulo}`}</h2>
+                <div className="purchase-head">
+                  <h2>{game.preco ? `Comprar ${game.titulo}` : `Jogar ${game.titulo}`}</h2>
+                  <button
+                      className={desejado ? 'btn btn-ghost wish on' : 'btn btn-ghost wish'}
+                      onClick={alternarDesejo}
+                      aria-pressed={desejado}
+                  >
+                    <Icon name="heart" size={16} filled={desejado} />
+                    {desejado ? 'Na lista de desejos' : 'Adicionar à lista de desejos'}
+                  </button>
+                </div>
                 <div className="purchase-action">
-                  <p className={game.preco ? 'price big' : 'price free big'}>{formatPrice(game.preco)}</p>
+                  <PriceTag game={game} big />
                   {!confirmando && (
                       <button className="btn btn-green" onClick={() => setConfirmando(true)}>
                         {game.preco ? 'Adquirir' : 'Adicionar à biblioteca'}
@@ -178,7 +196,7 @@ export default function GamePage() {
                 {confirmando && (
                     <div className="confirm">
                       <p>
-                        Confirmar a aquisição de <strong>{game.titulo}</strong> por {formatPrice(game.preco)}? (simulado)
+                        Confirmar a aquisição de <strong>{game.titulo}</strong> por {formatPrice(precoFinal(game))}? (simulado)
                       </p>
                       <button className="btn btn-green" onClick={adquirir} disabled={adquirindo}>
                         {adquirindo ? 'Aguarde…' : 'Confirmar'}

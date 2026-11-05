@@ -8,6 +8,7 @@ public class Aquisicao {
     private Integer nota;
     private String texto;
     private String dataAvaliacao;
+    private Double valorPago;
 
     public Aquisicao() {}
 
@@ -28,4 +29,7 @@ public class Aquisicao {
 
     public String getDataAvaliacao() { return dataAvaliacao; }
     public void setDataAvaliacao(String dataAvaliacao) { this.dataAvaliacao = dataAvaliacao; }
+
+    public Double getValorPago() { return valorPago; }
+    public void setValorPago(Double valorPago) { this.valorPago = valorPago; }
 }

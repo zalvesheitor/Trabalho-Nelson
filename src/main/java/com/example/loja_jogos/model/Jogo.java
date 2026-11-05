@@ -13,6 +13,7 @@ public class Jogo {
     private String sinopse;
     private String capa;
     private String banner;
+    private Integer desconto; // percentual de desconto (ex.: 60), ou null se não há oferta
 
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -49,4 +50,7 @@ public class Jogo {
 
     public String getBanner() { return banner; }
     public void setBanner(String banner) { this.banner = banner; }
+
+    public Integer getDesconto() { return desconto; }
+    public void setDesconto(Integer desconto) { this.desconto = desconto; }
 }
