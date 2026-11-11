@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import GameImage from '../components/GameImage.jsx';
+import CartDrawer from '../components/CartDrawer.jsx';
 import { formatDate, formatPrice, Stars } from '../components/ui.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useGames } from '../context/GamesContext.jsx';
@@ -175,19 +176,13 @@ export default function GamePage() {
                       </button>
                   )}
                 </div>
-                {confirmando && (
-                    <div className="confirm">
-                      <p>
-                        Confirmar a aquisição de <strong>{game.titulo}</strong> por {formatPrice(game.preco)}? (simulado)
-                      </p>
-                      <button className="btn btn-green" onClick={adquirir} disabled={adquirindo}>
-                        {adquirindo ? 'Aguarde…' : 'Confirmar'}
-                      </button>
-                      <button className="btn btn-ghost" onClick={() => setConfirmando(false)} disabled={adquirindo}>
-                        Cancelar
-                      </button>
-                    </div>
-                )}
+                <CartDrawer
+                    open={confirmando}
+                    game={game}
+                    busy={adquirindo}
+                    onClose={() => setConfirmando(false)}
+                    onCheckout={adquirir}
+                />
                 {!user && <p className="hint">Você precisará entrar na sua conta para adquirir.</p>}
                 {erro && <p className="msg err">{erro}</p>}
               </>
