@@ -41,6 +41,8 @@ const PATHS = {
       <polyline points="5 12 12 5 19 12" />
     </>
   ),
+  left: <polyline points="15 18 9 12 15 6" />,
+  right: <polyline points="9 18 15 12 9 6" />,
   down: (
     <>
       <line x1="12" y1="5" x2="12" y2="19" />

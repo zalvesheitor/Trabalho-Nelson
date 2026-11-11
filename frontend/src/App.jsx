@@ -4,6 +4,8 @@ import Store from './pages/Store.jsx';
 import GamePage from './pages/GamePage.jsx';
 import Library from './pages/Library.jsx';
 import Login from './pages/Login.jsx';
+import ScrollToTop from './components/ScrollToTop.jsx';
+import BackToTop from './components/BackToTop.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function RequireAuth({ children }) {
@@ -14,6 +16,7 @@ function RequireAuth({ children }) {
 export default function App() {
   return (
     <>
+      <ScrollToTop />
       <Header />
       <main className="container">
         <Routes>
@@ -31,6 +34,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+      <BackToTop />
     </>
   );
 }

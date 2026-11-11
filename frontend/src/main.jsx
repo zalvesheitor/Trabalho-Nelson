@@ -5,6 +5,7 @@ import App from './App.jsx';
 import { AuthProvider } from './context/AuthContext.jsx';
 import { GamesProvider } from './context/GamesContext.jsx';
 import './styles.css';
+import './feed.css';
 
 ReactDOM.createRoot(document.getElementById('root')).render(
     <React.StrictMode>
