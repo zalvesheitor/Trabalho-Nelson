@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import GameImage from '../GameImage.jsx';
 import Icon from '../Icon.jsx';
-import { formatDate, formatPrice } from '../ui.jsx';
+import { DiscountPrice, QuickActions, formatDate } from '../ui.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 
 // ---------- peças compartilhadas ----------
@@ -10,26 +10,30 @@ import { useAuth } from '../../context/AuthContext.jsx';
 function Price({ game, className = '' }) {
     const { hasGame } = useAuth();
     if (hasGame(game.id)) return <span className={`owned ${className}`}>✓ Na biblioteca</span>;
-    return <span className={`price ${game.preco ? '' : 'free'} ${className}`}>{formatPrice(game.preco)}</span>;
+    return <DiscountPrice game={game} className={className} />;
 }
 
 const ano = (iso) => new Date(iso).getFullYear();
 
 // Cápsula 16:9 (capa larga + título + preço), o bloco básico da vitrine da Steam.
+// Os botões rápidos ficam fora do link (botão dentro de <a> não é HTML válido).
 function Capsule({ game, className = '' }) {
     return (
-        <Link to={`/jogo/${game.slug}`} className={`capsule ${className}`}>
-            <GameImage src={game.banner} title={game.titulo} id={game.id} className="capsule-media" />
-            <div className="capsule-body">
-                <strong title={game.titulo}>{game.titulo}</strong>
-                <small>
-                    {game.genero} · {ano(game.lancamento)}
-                </small>
-            </div>
-            <div className="capsule-foot">
-                <Price game={game} />
-            </div>
-        </Link>
+        <div className={`capsule ${className}`}>
+            <Link to={`/jogo/${game.slug}`} className="capsule-link">
+                <GameImage src={game.banner} title={game.titulo} id={game.id} className="capsule-media" />
+                <div className="capsule-body">
+                    <strong title={game.titulo}>{game.titulo}</strong>
+                    <small>
+                        {game.genero} · {ano(game.lancamento)}
+                    </small>
+                </div>
+                <div className="capsule-foot">
+                    <Price game={game} />
+                </div>
+            </Link>
+            <QuickActions game={game} className="capsule-actions" />
+        </div>
     );
 }
 

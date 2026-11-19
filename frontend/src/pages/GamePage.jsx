@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate, useParams } from 'react-router-dom';
+import { Link, useParams } from 'react-router-dom';
 import { api } from '../api.js';
 import GameImage from '../components/GameImage.jsx';
-import CartDrawer from '../components/CartDrawer.jsx';
-import { formatDate, formatPrice, Stars } from '../components/ui.jsx';
+import Icon from '../components/Icon.jsx';
+import { CartButton, DiscountPrice, formatDate, Stars } from '../components/ui.jsx';
 import { useAuth } from '../context/AuthContext.jsx';
 import { useGames } from '../context/GamesContext.jsx';
+import { useWishlist } from '../context/WishlistContext.jsx';
 
 function ReviewForm({ gameId, onSaved }) {
   const { saveReview, myReview } = useAuth();
@@ -63,12 +64,9 @@ function ReviewForm({ gameId, onSaved }) {
 
 export default function GamePage() {
   const { slug } = useParams();
-  const navigate = useNavigate();
   const { games, loading } = useGames();
-  const { user, hasGame, acquireGame, bibliotecaPronta } = useAuth();
-  const [confirmando, setConfirmando] = useState(false);
-  const [adquirindo, setAdquirindo] = useState(false);
-  const [erro, setErro] = useState('');
+  const { user, hasGame, bibliotecaPronta } = useAuth();
+  const { isWished, toggle } = useWishlist();
   const [reviews, setReviews] = useState([]);
   const [versao, setVersao] = useState(0);
 
@@ -97,19 +95,8 @@ export default function GamePage() {
   }
 
   const owned = hasGame(game.id);
+  const wished = isWished(game.id);
   const media = reviews.length ? reviews.reduce((s, r) => s + r.nota, 0) / reviews.length : 0;
-
-  async function adquirir() {
-    if (!user) {
-      navigate('/login');
-      return;
-    }
-    setAdquirindo(true);
-    const r = await acquireGame(game);
-    setAdquirindo(false);
-    setConfirmando(false);
-    setErro(r.ok ? '' : r.error);
-  }
 
   return (
       <article className="game">
@@ -168,23 +155,22 @@ export default function GamePage() {
           ) : (
               <>
                 <h2>{game.preco ? `Comprar ${game.titulo}` : `Jogar ${game.titulo}`}</h2>
-                <div className="purchase-action">
-                  <p className={game.preco ? 'price big' : 'price free big'}>{formatPrice(game.preco)}</p>
-                  {!confirmando && (
-                      <button className="btn btn-green" onClick={() => setConfirmando(true)}>
-                        {game.preco ? 'Adquirir' : 'Adicionar à biblioteca'}
-                      </button>
-                  )}
+                <div className="purchase-row">
+                  <button
+                      type="button"
+                      className={wished ? 'btn btn-wish on' : 'btn btn-wish'}
+                      onClick={() => toggle(game)}
+                      aria-pressed={wished}
+                  >
+                    <Icon name="heart" size={14} filled={wished} />
+                    {wished ? 'Na lista de desejos' : 'Adicionar à lista de desejos'}
+                  </button>
+                  <div className="purchase-action">
+                    <DiscountPrice game={game} size="big" />
+                    <CartButton game={game} />
+                  </div>
                 </div>
-                <CartDrawer
-                    open={confirmando}
-                    game={game}
-                    busy={adquirindo}
-                    onClose={() => setConfirmando(false)}
-                    onCheckout={adquirir}
-                />
-                {!user && <p className="hint">Você precisará entrar na sua conta para adquirir.</p>}
-                {erro && <p className="msg err">{erro}</p>}
+                {!user && <p className="hint">Você precisará entrar na sua conta para finalizar a compra.</p>}
               </>
           )}
         </div>

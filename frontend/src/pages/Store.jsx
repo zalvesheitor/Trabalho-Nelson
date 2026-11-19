@@ -1,12 +1,12 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { Link, useNavigationType } from 'react-router-dom';
-import GameCard from '../components/GameCard.jsx';
+import { Link, useNavigationType, useSearchParams } from 'react-router-dom';
 import GameImage from '../components/GameImage.jsx';
-import { formatPrice } from '../components/ui.jsx';
+import { DiscountPrice, SearchInput } from '../components/ui.jsx';
 import InfiniteFeed from '../components/feed/InfiniteFeed.jsx';
 import InfiniteList from '../components/feed/InfiniteList.jsx';
 import { storeMemory } from '../feed/storeMemory.js';
 import { useGames } from '../context/GamesContext.jsx';
+import { matchesSearch } from '../pricing.js';
 
 const ORDENS = {
   feed: (a, b) => b.lancamento.localeCompare(a.lancamento), // "Vitrine": no modo lista, mais recentes primeiro
@@ -18,6 +18,8 @@ const ORDENS = {
 export default function Store() {
   const { games, loading, error } = useGames();
   const navType = useNavigationType();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const termoGlobal = searchParams.get('q');
 
   // Voltar (POP) devolve a loja exatamente como estava; entrar por um link começa do zero.
   // O reset é idempotente, então pode ficar no inicializador (StrictMode o executa duas vezes).
@@ -58,10 +60,8 @@ export default function Store() {
   }, [pausado, destaques.length]);
 
   const lista = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    const filtrados = games.filter(
-        (g) => (genero === 'Todos' || g.genero === genero) && g.titulo.toLowerCase().includes(termo)
-    );
+    // Busca case-insensitive por título ou gênero (categoria).
+    const filtrados = games.filter((g) => (genero === 'Todos' || g.genero === genero) && matchesSearch(g, busca));
     return [...filtrados].sort(ORDENS[ordem]);
   }, [games, busca, genero, ordem]);
 
@@ -97,6 +97,16 @@ export default function Store() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [loading]);
 
+  // Busca vinda da barra global do topo (/?q=termo): aplica o filtro na listagem,
+  // rola até os resultados e limpa o parâmetro da URL (sem criar entrada no histórico).
+  useEffect(() => {
+    if (termoGlobal == null || loading) return;
+    filtrar({ busca: termoGlobal, genero: 'Todos' });
+    setSearchParams({}, { replace: true });
+    requestAnimationFrame(() => layoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [termoGlobal, loading]);
+
   function abrirGenero(g) {
     filtrar({ genero: g, busca: '' });
     requestAnimationFrame(() => layoutRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }));
@@ -123,7 +133,7 @@ export default function Store() {
                     <span className="tag">Destaque</span>
                     <h2>{destaque.titulo}</h2>
                     <p>{destaque.sinopse}</p>
-                    <strong className="hero-price">{formatPrice(destaque.preco)}</strong>
+                    <DiscountPrice game={destaque} className="hero-price" />
                   </div>
                 </Link>
                 <ul className="hero-list">
@@ -157,11 +167,11 @@ export default function Store() {
         <div className="store-layout" ref={layoutRef}>
           <div className="store-main">
             <section className="filters">
-              <input
-                  type="search"
-                  placeholder="Buscar jogo pelo título…"
+              <SearchInput
                   value={busca}
-                  onChange={(e) => filtrar({ busca: e.target.value })}
+                  onChange={(v) => filtrar({ busca: v })}
+                  placeholder="Buscar jogo pelo título ou gênero…"
+                  className="filters-search"
               />
               <select value={ordem} onChange={(e) => filtrar({ ordem: e.target.value })}>
                 <option value="feed">Vitrine (recomendados)</option>
