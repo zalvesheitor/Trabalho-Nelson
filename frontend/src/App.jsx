@@ -12,35 +12,42 @@ import CheckoutModal from './components/CheckoutModal.jsx';
 import { useAuth } from './context/AuthContext.jsx';
 
 function RequireAuth({ children }) {
-  const { user } = useAuth();
-  return user ? children : <Navigate to="/login" replace />;
+    const { user } = useAuth();
+    return user ? children : <Navigate to="/login" replace />;
 }
 
 export default function App() {
-  return (
-    <>
-      <ScrollToTop />
-      <Header />
-      <main className="container">
-        <Routes>
-          <Route path="/" element={<Store />} />
-          <Route path="/jogo/:slug" element={<GamePage />} />
-          <Route
-            path="/biblioteca"
-            element={
-              <RequireAuth>
-                <Library />
-              </RequireAuth>
-            }
-          />
-          <Route path="/lista-de-desejos" element={<Wishlist />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
-      <BackToTop />
-      <CartDrawer />
-      <CheckoutModal />
-    </>
-  );
+    return (
+        <>
+            <ScrollToTop />
+            <Header />
+            <main className="container">
+                <Routes>
+                    <Route path="/" element={<Store />} />
+                    <Route path="/jogo/:slug" element={<GamePage />} />
+                    <Route
+                        path="/biblioteca"
+                        element={
+                            <RequireAuth>
+                                <Library />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route
+                        path="/lista-de-desejos"
+                        element={
+                            <RequireAuth>
+                                <Wishlist />
+                            </RequireAuth>
+                        }
+                    />
+                    <Route path="/login" element={<Login />} />
+                    <Route path="*" element={<Navigate to="/" replace />} />
+                </Routes>
+            </main>
+            <BackToTop />
+            <CartDrawer />
+            <CheckoutModal />
+        </>
+    );
 }
